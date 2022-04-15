@@ -27,8 +27,8 @@ public abstract class Process extends Thread {
 
     protected void broadcast(Collection<? extends Process> processSet, Message m, int round){
         for(Process p : processSet){
-            m.setLockUntil(this.latencyDice(round+this.LATENCY[0],
-                round+this.LATENCY[1]+1));
+            m.setLockUntil(this.latencyDice(round+this.LATENCY[1]+1,
+                    round+this.LATENCY[0]));
             p.putInMessage(m);
         }
     }
