@@ -15,9 +15,9 @@ public abstract class Process extends Thread {
         this.inbox.offer(m);
     }
 
-    protected int latencyDice(int upperBound, int lowerBound){
+    protected int latencyDice(int lowerBound, int upperBound){
         // start and end represents the upper and lower bound of the latency
-        return upperBound + random.nextInt(lowerBound - upperBound);
+        return lowerBound + random.nextInt(upperBound - lowerBound);
     }
 
     protected int latencyDice(int upperBound){
@@ -27,8 +27,8 @@ public abstract class Process extends Thread {
 
     protected void broadcast(Collection<? extends Process> processSet, Message m, int round){
         for(Process p : processSet){
-            m.setLockUntil(this.latencyDice(round+this.LATENCY[1]+1,
-                    round+this.LATENCY[0]));
+            m.setLockUntil(this.latencyDice(round+this.LATENCY[0],
+                   round+this.LATENCY[1]+1));
             p.putInMessage(m);
         }
     }
