@@ -10,6 +10,7 @@ public class MainThread {
 		File input_file = new File(input);
 		try {
 			//================The old code from project 1=========================
+			// TODO: Arjun will finish this.
 			BufferedReader r = new BufferedReader(new FileReader(input_file));
 			int n = Integer.parseInt(r.readLine()); // get number of processes
 			final CyclicBarrier barrier = new CyclicBarrier(n);
@@ -101,7 +102,6 @@ public class MainThread {
 //							p.putInMessage(begin);
 //						}
 //					}
-				// TODO: Arjun finish this.
 					
 					//if(!run) {
 						//Message fin = new Message(leader, Type.FIN);

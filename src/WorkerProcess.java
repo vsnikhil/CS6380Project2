@@ -50,7 +50,7 @@ public class WorkerProcess extends Process implements Runnable{
 		this.master = master;
 		this.isLeader = false;
 		this.inbox = new LinkedBlockingQueue<Message>();
-//		this.barrier = barrier;
+		this.messageCounter = 0;
 
 		this.neighbors = neighbors;
 		this.children = new HashSet<>();
@@ -69,6 +69,7 @@ public class WorkerProcess extends Process implements Runnable{
 	private void convergecast(int latency){
 		Message msg = new Message(this.processId, this.newNodesDiscovered, Type.CVG, latency);
 		this.neighbors.get(this.parent).putInMessage(msg);
+		this.messageCounter++;
 	}
 
 	private void waitToStartRound() throws InterruptedException {
@@ -88,6 +89,7 @@ public class WorkerProcess extends Process implements Runnable{
 				}
 				for(Process p: childrenProcesses){
 					p.putInMessage(msg);
+					this.messageCounter++;
 				}
 				flag = true;
 			} else {
@@ -99,14 +101,14 @@ public class WorkerProcess extends Process implements Runnable{
 	private void explore(){
 		Set<Process> targetProcesses = new HashSet<>();
 		if(this.parent != -1){
-			if(!this.children.isEmpty()){ // if has parent then only broad cast to non parent
+			if(!this.children.isEmpty()){ // if has both parent and children then only broadcast to children
 				for(int pid : this.neighbors.keySet()) {
 					if (this.children.contains(pid))
 						targetProcesses.add(this.neighbors.get(pid));
 				}
-			} else { // if has parent and children then only broad cast to children
+			} else { // otherwise broadcast to non parent
 				for(int pid : this.neighbors.keySet()){
-					if(pid != this.parent)
+					if(pid != this.parent && !this.others.contains(pid))
 						targetProcesses.add(this.neighbors.get(pid));
 				}
 			}
@@ -119,25 +121,19 @@ public class WorkerProcess extends Process implements Runnable{
 	}
 
 	private void listenToBRD(Message m){
-		// only when receive broadcast should we response
+		// only when receive broadcast should it replies
 		int latency = this.latencyDice(round+this.LATENCY[0],
 				round+this.LATENCY[1]+1);
 		if(m.getSenderId() == this.parent){
 			if(this.lastRid != this.rid){
 				Message msg = new Message(this.processId, Type.ACK, latency);
 				this.neighbors.get(m.getSenderId()).putInMessage(msg);
-			} else {
-//				if(allReceived() && this.toConverge){
-//					convergecast(latency);
-//					this.toConverge = false;
-//				} else {
-//					// record that we are supposed to wait.
-					this.toConverge = true;
-//				}
+				this.messageCounter++;
 			}
 		} else {
 			Message msg = new Message(this.processId, Type.REJ, latency);
 			this.neighbors.get(m.getSenderId()).putInMessage(msg);
+			this.messageCounter++;
 		}
 	}
 
@@ -308,6 +304,7 @@ public class WorkerProcess extends Process implements Runnable{
 						Message msg = new Message(this.processId, Type.FIN);
 						this.master.putInMessage(msg);
 						broadcast(this.neighbors.values(), new Message(this.processId, Type.FIN), this.round);
+						this.messageCounter+=this.neighbors.values().size();
 						this.status = false;
 					} else {
 						Message msg = new Message(this.processId, this.parent, Type.TMN);
