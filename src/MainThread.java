@@ -20,13 +20,15 @@ public class MainThread {
 			int[] process_ids = new int[n]; // process ids
 			int[][] graph = new int[n][n]; // adjacency graph
 			
-			String[] ids = r.readLine().split(" "); // split by space to get process id
+			//String[] ids = r.readLine().split(" "); // split by space to get process id
 			
-			for(int i = 0; i < ids.length; i++) {
-				process_ids[i] = Integer.parseInt(ids[i]);
+			int root = Integer.parseInt(r.readLine());
+			
+			for(int i = 0; i < n; i++) {
+				process_ids[i] = i;
 			}
 			
-			for(int i = 0; i < ids.length; i++) {
+			for(int i = 0; i < n; i++) {
 				String [] neighbors = r.readLine().split(" "); // get neighbors for each process
 				
 				for(int j = 0; j < neighbors.length; j++) {
@@ -34,13 +36,17 @@ public class MainThread {
 				}
 			}
 			
+			
+			
 			System.out.println(n);
 			System.out.println(Arrays.toString(process_ids));
 			System.out.println(Arrays.deepToString(graph));
 			
+			
 			WorkerProcess[] processes = new WorkerProcess[n];
 			
-			WorkerProcess master = new WorkerProcess(-100);
+			WorkerProcess master = new WorkerProcess(root);
+			int round = 1;
 			
 			for(int i = 0; i < processes.length; i++) {
 				processes[i] = new WorkerProcess(process_ids[i]);
@@ -52,16 +58,54 @@ public class MainThread {
 			
 				int[] adj = graph[i];
 				
-				for(int neighbor: adj) {
-					if(neighbor != 0) {
-						neighbors.put(process_ids[neighbor - 1], processes[neighbor - 1]);
+				for(int j = 0; j < adj.length; j++) {
+					if(adj[j] != 0) {
+						neighbors.put(process_ids[j], processes[j]);
 					}
 				}
-	
+				
+				System.out.println("Process id " + p.getProcessId() + " " + "Neighbors " + neighbors);
 				p.setWorkerProcess(master, neighbors, barrier);
-				p.putInMessage(new Message(master.getProcessId(), Type.BGN));
+				p.putInMessage(new Message(master.getProcessId(), round, Type.BGN));
 			}
 			
+			Thread[] threads = new Thread[n];
+			for(int i = 0; i < threads.length; i++) {
+				Thread thread = new Thread(processes[i]);
+
+				threads[i] = thread;
+				thread.start();
+			}
+			
+			boolean run = true;
+			
+			while(run) {
+				int numOfMessages = master.inbox.size();
+			
+				if(numOfMessages == n) {
+					for(int i = 0; i < numOfMessages; i++) {
+						Message m = master.inbox.take();
+						
+						if(m.getMessageType().equals(Type.FIN)) {
+							for(Process p : processes){
+								p.join();
+							}
+							run = false;
+							break;
+						}
+						if(run) {
+							Message begin = new Message(master.getProcessId(), round + 1, Type.BGN);
+							for(WorkerProcess p: processes) {
+								p.putInMessage(begin);
+							}
+							
+							round = round + 1;
+						}
+					}
+				}
+			}
+			
+			/*
 			for(int i = 0; i < processes.length; i++) {
 				pid.put(processes[i].getProcessId(), i);
 			}
@@ -114,14 +158,30 @@ public class MainThread {
 			System.out.println("Leader: " + leader);
 			
 			System.out.println("main done");
-		} catch (IOException e) {
+		*/
+		
+		} catch (IOException | InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
+		
 
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
