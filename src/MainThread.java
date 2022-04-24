@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.CyclicBarrier;
 
 public class MainThread {
@@ -13,9 +14,6 @@ public class MainThread {
 			// TODO: Arjun will finish this.
 			BufferedReader r = new BufferedReader(new FileReader(input_file));
 			int n = Integer.parseInt(r.readLine()); // get number of processes
-			final CyclicBarrier barrier = new CyclicBarrier(n);
-			
-			HashMap<Integer, Integer> pid = new HashMap<>();
 			 
 			int[] process_ids = new int[n]; // process ids
 			int[][] graph = new int[n][n]; // adjacency graph
@@ -45,7 +43,7 @@ public class MainThread {
 			
 			WorkerProcess[] processes = new WorkerProcess[n];
 			
-			WorkerProcess master = new WorkerProcess(root);
+			WorkerProcess master = new WorkerProcess(-1);
 			int round = 1;
 			
 			for(int i = 0; i < processes.length; i++) {
@@ -65,24 +63,29 @@ public class MainThread {
 				}
 				
 				System.out.println("Process id " + p.getProcessId() + " " + "Neighbors " + neighbors);
-				p.setWorkerProcess(master, neighbors, barrier);
-				p.putInMessage(new Message(master.getProcessId(), round, Type.BGN));
+				p.setWorkerProcess(master, neighbors);//, barrier);
+
 			}
 			
 			Thread[] threads = new Thread[n];
 			for(int i = 0; i < threads.length; i++) {
 				Thread thread = new Thread(processes[i]);
-
+				if(i == root){
+					processes[i].setLeader();
+				}
 				threads[i] = thread;
 				thread.start();
+				processes[i].putInMessage(new Message(master.getProcessId(), round, Type.BGN));
+
 			}
 			
 			boolean run = true;
 			
 			while(run) {
 				int numOfMessages = master.inbox.size();
-			
+				HashSet<Integer> sent = new HashSet<>();
 				if(numOfMessages == n) {
+
 					for(int i = 0; i < numOfMessages; i++) {
 						Message m = master.inbox.take();
 						
@@ -93,17 +96,31 @@ public class MainThread {
 							run = false;
 							break;
 						}
-						if(run) {
+						if(m.getMessageType() == Type.TMN || m.getMessageType() == Type.END) {
 							Message begin = new Message(master.getProcessId(), round + 1, Type.BGN);
-							for(WorkerProcess p: processes) {
-								p.putInMessage(begin);
+							if(sent.contains(m.getSenderId())){
+								System.out.println("send BGN twice!!! " + m.getSenderId());
 							}
-							
-							round = round + 1;
+							processes[m.getSenderId()].putInMessage(begin);
+							sent.add(m.getSenderId());
 						}
 					}
+					sent.clear();
+					round++;
 				}
 			}
+			
+			for(WorkerProcess p: processes) {
+				System.out.println("Process " + p.getProcessId() + " with children " + p.getChildren());
+			}
+			
+			int totalMessages = 0;
+			
+			for(WorkerProcess p: processes) {
+				totalMessages += p.getNumMessages();
+			}
+			
+			System.out.println("Total Number of Messages " + totalMessages);
 			
 			/*
 			for(int i = 0; i < processes.length; i++) {
@@ -164,13 +181,31 @@ public class MainThread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		
-
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
