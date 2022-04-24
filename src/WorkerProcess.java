@@ -18,7 +18,7 @@ public class WorkerProcess extends Process implements Runnable{
 	private HashMap<Integer, Process> neighbors; // set of neighbors for process
 	private Set<Integer> children; // children of process for termination detection
 	private Set<Integer> others; // non-children
-	private Set<Integer> terminatedNeighbor; // non-children
+//	private Set<Integer> terminatedNeighbor; // non-children
 
 	private int parent; // parent of process
 	private Process master; // reference of master process
@@ -40,29 +40,38 @@ public class WorkerProcess extends Process implements Runnable{
 		this.messageCounter = 0;
 		this.round = -1;
 		this.random = new Random();
+		this.inbox = new LinkedBlockingQueue<>();
 	}
 	
-	public void setWorkerProcess(Process master, HashMap<Integer, Process> neighbors, CyclicBarrier barrier) {
+	public void setWorkerProcess(Process master, HashMap<Integer, Process> neighbors){//}, CyclicBarrier barrier) {
 		this.status = true; // active
 		this.rid = processId;
 		this.lastRid = this.rid;
 		this.parent = -1;
 		this.master = master;
 		this.isLeader = false;
-		this.inbox = new LinkedBlockingQueue<Message>();
 		this.messageCounter = 0;
 
 		this.neighbors = neighbors;
 		this.children = new HashSet<>();
 		this.others = new HashSet<>();
-		this.terminatedNeighbor = new HashSet<>();
+//		this.terminatedNeighbor = new HashSet<>();
+		this.neighbors.remove(this.processId);
 	}
 
 	public int getProcessId() {
 		return processId;
 	}
-
-	private void setLeader(){
+	
+	public Set<Integer> getChildren(){
+		return this.children;
+	}
+	
+	public int getNumMessages() {
+		return this.messageCounter;
+	}
+	
+	public void setLeader(){
 		this.isLeader = true;
 	}
 
@@ -79,6 +88,9 @@ public class WorkerProcess extends Process implements Runnable{
 			if(msg.getMessageType().equals(Type.BGN)){
 				// record the current round number.
 				this.round = msg.getInfoId(); // infoId here represents the round.
+				if(this.isLeader && round == 1){
+					explore();
+				}
 				flag = true;
 			} else if(msg.getMessageType().equals(Type.FIN)){
 				// start self destruction
@@ -99,6 +111,9 @@ public class WorkerProcess extends Process implements Runnable{
 	}
 
 	private void explore(){
+		if(this.lastRid != this.rid){
+			return;
+		}
 		Set<Process> targetProcesses = new HashSet<>();
 		if(this.parent != -1){
 			if(!this.children.isEmpty()){ // if has both parent and children then only broadcast to children
@@ -157,6 +172,13 @@ public class WorkerProcess extends Process implements Runnable{
 			case REJ:
 				this.others.add(msg.getSenderId());
 				this.receivedREJsFrom.add(msg.getSenderId());
+				if(allReceived()){
+					if(this.isLeader){
+						System.out.println("Leader cannot be rejected!");
+					} else {
+						this.convergecast(latency);
+					}
+				}
 				break;
 			case CVG:
 				this.newNodesDiscovered += msg.getInfoId();
@@ -182,12 +204,15 @@ public class WorkerProcess extends Process implements Runnable{
 			if(blockedLinks.contains(msg.getSenderId())){
 				locked = true;
 			}
-			if(msg.tryToAccess(this.round)) {
+			if(!msg.tryToAccess(this.round)) {
 				this.blockedLinks.add(msg.getSenderId());
 				locked = true;
 			}
 			if(locked){
 				this.inbox.offer(msg);
+				continue;
+			}
+			if(msg.getSenderId() == this.processId){
 				continue;
 			}
 
@@ -209,7 +234,7 @@ public class WorkerProcess extends Process implements Runnable{
 					break;
 				case TMN:
 					// this time the info id is
-					this.terminatedNeighbor.add(msg.getSenderId());
+					//this.terminatedNeighbor.add(msg.getSenderId());
 					break;
 				default:
 					this.inbox.offer(msg);
@@ -256,24 +281,24 @@ public class WorkerProcess extends Process implements Runnable{
 			this.receivedREJsFrom.clear();
 			this.receivedACKsFrom.clear();
 			this.newNodesDiscovered = 0;
+			this.lastRid = this.rid;
 		}
-		this.lastRid = this.rid;
 		this.blockedLinks = new HashSet<>();
 	}
 
 	private void checkTerminate(){
 		// check if current thread should terminate
-		boolean allChildrenTerminated = false;
+//		boolean allChildrenTerminated = false;
 		boolean noNewProcessFound = false;
 
 		// check if a process has received notifications of completion from all its children
-		Set<Integer> temp = new HashSet<>(this.children);
-		temp.removeAll(this.terminatedNeighbor);
-		if (temp.isEmpty()) {
-			//System.out.println(this.processId + " " + this.terminatedNeighbor);
-			// all children have terminated
-			allChildrenTerminated = true;
-		}
+//		Set<Integer> temp = new HashSet<>(this.children);
+//		temp.removeAll(this.terminatedNeighbor);
+//		if (temp.isEmpty()) {
+//			//System.out.println(this.processId + " " + this.terminatedNeighbor);
+//			// all children have terminated
+//			allChildrenTerminated = true;
+//		}
 
 		// check if a process has received REJs from other neighbors
 		// the process shouldn't expect a REJ from the parent to terminate, it may have happened in an earlier round
@@ -281,9 +306,9 @@ public class WorkerProcess extends Process implements Runnable{
 			noNewProcessFound = true;
 		}
 
-		if (this.parent != -1 && allChildrenTerminated && noNewProcessFound && this.lastRid == this.rid) {
+		if (this.parent != -1 && noNewProcessFound && this.lastRid == this.rid) {
 			this.isReadyToTerminate = true;
-		} else isReadyToTerminate = this.parent == -1 && allChildrenTerminated && isLeader;
+		} else isReadyToTerminate = this.neighbors.size() == this.children.size() && noNewProcessFound && isLeader;
 	}
 
 	@Override
