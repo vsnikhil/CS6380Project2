@@ -78,6 +78,7 @@ public class WorkerProcess extends Process implements Runnable{
 	private void convergecast(int latency){
 		Message msg = new Message(this.processId, this.newNodesDiscovered, Type.CVG, latency);
 		this.neighbors.get(this.parent).putInMessage(msg);
+		System.out.printf("message CVG sent by %d to %d%n", this.processId, this.parent);
 		this.messageCounter++;
 	}
 
@@ -103,6 +104,7 @@ public class WorkerProcess extends Process implements Runnable{
 					p.putInMessage(msg);
 					this.messageCounter++;
 				}
+				System.out.printf("message FIN sent by %d to %d children %n", this.processId, childrenProcesses.size());
 				flag = true;
 			} else {
 				this.inbox.offer(msg);
@@ -127,12 +129,19 @@ public class WorkerProcess extends Process implements Runnable{
 						targetProcesses.add(this.neighbors.get(pid));
 				}
 			}
+			if(targetProcesses.isEmpty()){
+				int latency = this.latencyDice(round+this.LATENCY[0],
+						round+this.LATENCY[1]+1);
+				convergecast(latency);
+				return;
+			}
 		} else {
 			targetProcesses = new HashSet<>(this.neighbors.values());
 		}
 		Message m = new Message(this.processId, this.rid, Type.BRD);
 		this.broadcast(targetProcesses, m, this.round);
 		this.messageCounter+=targetProcesses.size();
+		System.out.printf("message BRD sent by %d to %d neighbors%n", this.processId, targetProcesses.size());
 	}
 
 	private void listenToBRD(Message m){
@@ -144,11 +153,13 @@ public class WorkerProcess extends Process implements Runnable{
 				Message msg = new Message(this.processId, Type.ACK, latency);
 				this.neighbors.get(m.getSenderId()).putInMessage(msg);
 				this.messageCounter++;
+				System.out.printf("message ACK sent by %d to %d %n", this.processId, this.parent);
 			}
 		} else {
 			Message msg = new Message(this.processId, Type.REJ, latency);
 			this.neighbors.get(m.getSenderId()).putInMessage(msg);
 			this.messageCounter++;
+			System.out.printf("message REJ sent by %d to %d %n", this.processId, m.getSenderId());
 		}
 	}
 
@@ -163,7 +174,9 @@ public class WorkerProcess extends Process implements Runnable{
 				this.newNodesDiscovered++;
 				if(allReceived()){
 					if(this.isLeader){
-						this.explore();
+						if(newNodesDiscovered > 0){
+							this.explore();
+						}
 					} else {
 						this.convergecast(latency);
 					}
@@ -185,7 +198,9 @@ public class WorkerProcess extends Process implements Runnable{
 				this.receivedACKsFrom.add(msg.getSenderId());
 				if(allReceived()){
 					if(this.isLeader){
-						this.explore();
+						if(newNodesDiscovered > 0){
+							this.explore();
+						}
 					} else {
 						this.convergecast(latency);
 					}
@@ -225,7 +240,9 @@ public class WorkerProcess extends Process implements Runnable{
 						this.parent = msg.getSenderId();
 					}
 					this.listenToBRD(msg);
-					this.explore();
+					if(msg.getSenderId() == this.parent){
+						this.explore();
+					}
 					break;
 				case ACK:
 				case REJ:
@@ -246,8 +263,12 @@ public class WorkerProcess extends Process implements Runnable{
 	private boolean allReceived(){
 		if(this.isLeader){
 			Set<Integer> temp = new HashSet<>(this.children);
+//			if(this.receivedACKsFrom.size() == temp.size()){
+//				System.out.println("received all.");
+//			}
 			temp.removeAll(this.receivedACKsFrom);
-			return temp.isEmpty();
+
+			return temp.isEmpty() && this.children.size() == this.neighbors.size();
 		} else if(this.parent != -1){
 			if(this.lastRid != this.rid){
 				return true;
@@ -325,16 +346,19 @@ public class WorkerProcess extends Process implements Runnable{
 				refreshBuffer();
 				
 				if(this.isReadyToTerminate){
+					System.out.printf("%d is ready to terminate %n", this.processId);
 					if(this.isLeader){
 						Message msg = new Message(this.processId, Type.FIN);
 						this.master.putInMessage(msg);
 						broadcast(this.neighbors.values(), new Message(this.processId, Type.FIN), this.round);
+						System.out.println("FIN messages sent by leader.");
 						this.messageCounter+=this.neighbors.values().size();
+
 						this.status = false;
 					} else {
 						Message msg = new Message(this.processId, this.parent, Type.TMN);
 						this.master.putInMessage(msg);
-						broadcast(this.neighbors.values(), msg, this.round);
+//						broadcast(this.neighbors.values(), msg, this.round);
 					}
 				} else{
 					Message msg = new Message(this.processId, Type.END);

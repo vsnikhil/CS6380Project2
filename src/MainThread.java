@@ -63,8 +63,7 @@ public class MainThread {
 				}
 				
 				System.out.println("Process id " + p.getProcessId() + " " + "Neighbors " + neighbors);
-				p.setWorkerProcess(master, neighbors);//, barrier);
-
+				p.setWorkerProcess(master, neighbors);
 			}
 			
 			Thread[] threads = new Thread[n];
