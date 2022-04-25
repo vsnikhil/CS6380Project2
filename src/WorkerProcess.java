@@ -63,6 +63,14 @@ public class WorkerProcess extends Process implements Runnable{
 		return processId;
 	}
 
+	public Set<Integer> getChildren(){
+		return this.children;
+	}
+	
+	public int getNumMessages() {
+		return this.messageCounter;
+	}
+
 	public void setLeader(){
 		this.isLeader = true;
 	}

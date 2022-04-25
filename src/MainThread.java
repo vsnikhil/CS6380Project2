@@ -110,6 +110,18 @@ public class MainThread {
 				}
 			}
 			
+			for(WorkerProcess p: processes) {
+				System.out.println("Process " + p.getProcessId() + " with children " + p.getChildren());
+			}
+			
+			int totalMessages = 0;
+			
+			for(WorkerProcess p: processes) {
+				totalMessages += p.getNumMessages();
+			}
+			
+			System.out.println("Total Number of Messages " + totalMessages);
+			
 			/*
 			for(int i = 0; i < processes.length; i++) {
 				pid.put(processes[i].getProcessId(), i);
@@ -172,6 +184,28 @@ public class MainThread {
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
