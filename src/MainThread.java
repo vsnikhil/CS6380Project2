@@ -20,10 +20,10 @@ public class MainThread {
 			
 			//String[] ids = r.readLine().split(" "); // split by space to get process id
 			
-			int root = Integer.parseInt(r.readLine());
+			int root = Integer.parseInt(r.readLine())-1;
 			
 			for(int i = 0; i < n; i++) {
-				process_ids[i] = i;
+				process_ids[i] = i+1;
 			}
 			
 			for(int i = 0; i < n; i++) {
@@ -100,7 +100,7 @@ public class MainThread {
 							if(sent.contains(m.getSenderId())){
 								System.out.println("send BGN twice!!! " + m.getSenderId());
 							}
-							processes[m.getSenderId()].putInMessage(begin);
+							processes[m.getSenderId()-1].putInMessage(begin);
 							sent.add(m.getSenderId());
 						}
 					}
