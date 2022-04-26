@@ -20,10 +20,10 @@ public class MainThread {
 			
 			//String[] ids = r.readLine().split(" "); // split by space to get process id
 			
-			int root = Integer.parseInt(r.readLine());
+			int root = Integer.parseInt(r.readLine()) - 1;
 			
 			for(int i = 0; i < n; i++) {
-				process_ids[i] = i;
+				process_ids[i] = i + 1;
 			}
 			
 			for(int i = 0; i < n; i++) {
@@ -58,13 +58,12 @@ public class MainThread {
 				
 				for(int j = 0; j < adj.length; j++) {
 					if(adj[j] != 0) {
-						neighbors.put(process_ids[j], processes[j]);
+						neighbors.put(process_ids[j] - 1, processes[j]);
 					}
 				}
 				
 				System.out.println("Process id " + p.getProcessId() + " " + "Neighbors " + neighbors);
-				p.setWorkerProcess(master, neighbors);//, barrier);
-
+				p.setWorkerProcess(master, neighbors);
 			}
 			
 			Thread[] threads = new Thread[n];
@@ -101,7 +100,7 @@ public class MainThread {
 							if(sent.contains(m.getSenderId())){
 								System.out.println("send BGN twice!!! " + m.getSenderId());
 							}
-							processes[m.getSenderId()].putInMessage(begin);
+							processes[m.getSenderId() - 1].putInMessage(begin);
 							sent.add(m.getSenderId());
 						}
 					}
@@ -184,6 +183,50 @@ public class MainThread {
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
