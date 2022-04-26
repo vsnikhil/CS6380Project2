@@ -58,7 +58,7 @@ public class MainThread {
 				
 				for(int j = 0; j < adj.length; j++) {
 					if(adj[j] != 0) {
-						neighbors.put(process_ids[j] - 1, processes[j]);
+						neighbors.put(process_ids[j], processes[j]);
 					}
 				}
 				
@@ -183,6 +183,50 @@ public class MainThread {
 	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
