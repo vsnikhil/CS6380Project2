@@ -35,3 +35,70 @@
 - Arjun : the master process
 - Stan : the worker process
 - Nikhil : termination check
+
+# CS6380Project2
+
+The repo for the second distributed computing project
+
+- Group members:
+
+  - Sennan Liu
+  - Arjun Sridhar
+  - Sai Nikhil Voruganti
+
+- Contributions:
+  - Sennan Liu
+    - Independently contributed the code of Process.java, Type.java, Message.java
+    - Partially contributed on the code of WorkerProcess.java(70%)
+    - Organized the group on group meeting and scheduling, manage code repo
+    - Help on quality assurance of the first version of code by proposing a type of testing cases
+    - Help teammates understand the algo logic
+  - Arjun Sridhar
+    - Partially contributed to WorkerProcess.java
+    - Mainly contributed to code of MainThread.java
+    - Helped test code
+    - Helped debug and fix issues in final version of code
+  - Sai Nikhil Voruganti
+    - Partially contributed to MainThread.java
+    - Termination Process in WorkerProcess.java
+    - Came up with several use cases to test
+    - Mainly debugged and fixed issues in final version of code
+
+## How to compile
+
+- Java version:
+
+```
+java version "1.8.0_172"
+Java(TM) SE Runtime Environment (build 1.8.0_172-b11)
+Java HotSpot(TM) 64-Bit Server VM (build 25.172-b11, mixed mode)
+```
+
+- command
+
+```
+mkdir out
+javac -encoding utf-8 -d ./out ./src/*.java
+```
+
+## How to use
+
+```
+java -cp ./out src.MainThread $SAMPLE_INPUT_FILE
+```
+
+## Sample input file
+
+- You could refer to the sample input file "test_case.txt" in that file we give a representation of the following network:
+  [pic here]
+- On the first line there is an integer "n" indicates the total number of worker process
+- On the second line is the root of the BFS tree
+- On the upcoming n lines, the neighbour of each process should be listed in each line by index. A 1 means the processes are neighbors and 0 means they are not
+
+* see the **test_case.txt**
+
+## Sample output
+
+- The ouput contains 2 components:
+  - The first is the process and its children from the produced BFS tree
+  - The second is the total number of messages during the entire run
